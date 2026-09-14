@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Atomic Dashboard - หมู่ A & สารเคมี (ม.3)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #030712; color: #f3f4f6; overflow: hidden; }
+        .glass-panel { background: rgba(17, 24, 39, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass-btn { background: rgba(31, 41, 55, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease; }
+        .glass-btn:hover { background: rgba(55, 65, 81, 0.9); border-color: rgba(56, 189, 248, 0.5); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(3, 7, 18, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(55, 65, 81, 0.8); border-radius: 3px; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col select-none">
+
+    <header class="min-h-[4.2rem] h-auto glass-panel border-b border-gray-800 flex flex-wrap items-center justify-between px-3 sm:px-6 py-2 z-20 shrink-0 gap-2">
+        <div class="flex items-center space-x-2.5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 shrink-0">
+                <i class="fa-solid fa-atom text-white text-base animate-spin" style="animation-duration: 15s;"></i>
+            </div>
+            <div class="min-w-0">
+                <h1 class="font-bold text-xs sm:text-sm text-white tracking-wide truncate">Quantum Atomic Dashboard</h1>
+                <p class="text-[10px] sm:text-[11px] text-cyan-400 truncate">ระบบจำลองโครงสร้างอะตอม ตารางธาตุ และสารเคมี ม.3</p>
+            </div>
+        </div>
+
+        <!-- Workflow Navigation: 1. ธาตุ >> 2. สารประกอบ >> 3. สารละลาย คอลลอยด์ แขวนลอย -->
+        <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
+            <button onclick="openPeriodicModal()" class="glass-btn px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold text-cyan-300 flex items-center space-x-1.5 shadow-lg hover:shadow-cyan-500/20 whitespace-nowrap">
+                <i class="fa-solid fa-table-cells text-cyan-400"></i>
+                <span>1. ธาตุ (Elements)</span>
+            </button>
+            <button onclick="openCompoundModal()" class="glass-btn px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold text-purple-300 flex items-center space-x-1.5 shadow-lg hover:shadow-purple-500/20 whitespace-nowrap">
+                <i class="fa-solid fa-flask-vial text-purple-400"></i>
+                <span>2. สารประกอบ (Compounds)</span>
+            </button>
+            <button onclick="openMixtureModal()" class="glass-btn px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold text-emerald-300 flex items-center space-x-1.5 shadow-lg hover:shadow-emerald-500/20 whitespace-nowrap">
+                <i class="fa-solid fa-droplet text-emerald-400"></i>
+                <span>3. สารละลาย คอลลอยด์ แขวนลอย</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="glass-panel border-b border-gray-800/80 px-4 py-2 flex flex-wrap items-center justify-between gap-3 z-10 shrink-0 bg-gray-950/90">
+        <div class="flex items-center space-x-3">
+            <span id="centerBadgeSymbol" class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center font-bold text-cyan-300 text-sm shrink-0">H</span>
+            <div class="min-w-0">
+                <div class="flex items-center space-x-2">
+                    <span id="centerBadgeName" class="text-xs font-bold text-white truncate max-w-[120px] sm:max-w-none">Hydrogen</span>
+                    <span id="centerBadgeTypeTag" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-950/60 text-amber-300 border border-amber-500/30">อโลหะ</span>
+                </div>
+                <div class="text-[10px] text-gray-400 truncate">เลขอะตอม (Z) = <span id="centerBadgeZ">1</span> | เลขมวล (A) = <span id="statAHeader" class="text-cyan-300 font-bold">1</span> | หมู่ <span id="centerBadgeGroup">IA</span> | คาบ <span id="centerBadgePeriod">1</span></div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4 text-xs">
+            <div><span class="text-red-400">p⁺:</span> <span id="statProtons" class="font-mono text-red-300 font-bold">1</span></div>
+            <div><span class="text-blue-400">n⁰:</span> <span id="statNeutrons" class="font-mono text-blue-300 font-bold">0</span></div>
+            <div><span class="text-yellow-400">e⁻:</span> <span id="statElectrons" class="font-mono text-yellow-300 font-bold">1</span></div>
+        </div>
+
+        <div class="flex items-center space-x-2 text-xs">
+            <span class="text-cyan-400 font-semibold hidden sm:inline">การจัดเรียง e⁻:</span>
+            <div id="shellConfigContainer" class="flex items-center space-x-1 overflow-x-auto max-w-[220px] sm:max-w-none py-0.5">
+                <!-- Dynamic Shell Badges -->
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-1 relative flex items-center justify-center overflow-hidden bg-gradient-to-radial from-gray-900 via-gray-950 to-black">
+        <div id="canvas-container" class="absolute inset-0 z-0 cursor-grab active:cursor-grabbing"></div>
+
+        <div class="absolute bottom-4 left-4 pointer-events-none glass-panel px-3 py-1.5 rounded-xl text-[11px] text-gray-400 flex items-center space-x-2 shadow-xl">
+            <i class="fa-solid fa-hand-pointer text-cyan-400"></i>
+            <span>คลิกและลากเมาส์เพื่อหมุนดูโครงสร้าง 3 มิติ | เลื่อนล้อเพื่อซูมเข้า-ออก</span>
+        </div>
+    </main>
+
+    <div id="periodicModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-3 sm:p-6">
+        <div class="glass-panel w-full max-w-[96vw] max-h-[92vh] rounded-3xl p-4 sm:p-6 flex flex-col shadow-2xl border border-cyan-500/30">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-800 flex-wrap gap-2 shrink-0">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
+                        <i class="fa-solid fa-table-cells"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-sm sm:text-base text-white truncate">1. ตารางธาตุหมู่ A (จัดเรียงตามคาบแนว水平 และหมู่แนวตั้ง ตรงแนวเดียวกัน)</h3>
+                        <p class="text-[10px] sm:text-xs text-gray-400 truncate">สีแยกระเภท: <span class="text-blue-400 font-semibold">โลหะ</span>, <span class="text-emerald-400 font-semibold">กึ่งโลหะ</span>, <span class="text-amber-400 font-semibold">อโลหะ</span>, <span class="text-purple-400 font-semibold">แก๊สมีตระกูล</span></p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="hidden xl:flex items-center space-x-3 text-[11px] bg-gray-900 px-3 py-1.5 rounded-xl border border-gray-800">
+                        <span class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span><span class="text-gray-300">โลหะ</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span><span class="text-gray-300">กึ่งโลหะ</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span><span class="text-gray-300">อโลหะ</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-purple-500 inline-block"></span><span class="text-gray-300">แก๊สมีตระกูล</span></span>
+                    </div>
+                    <button onclick="closePeriodicModal()" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition shrink-0 ml-2">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-auto mt-4 pr-1">
+                <div id="periodicGridContainer" class="min-w-[1050px]">
+                    <!-- Populated via JavaScript in true grid layout (Periods 1-7 rows, Groups 1-8 cols) -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="compoundModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-3 sm:p-6">
+        <div class="glass-panel w-full max-w-5xl rounded-3xl p-4 sm:p-6 flex flex-col shadow-2xl border border-purple-500/30 max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                        <i class="fa-solid fa-flask-vial"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-sm sm:text-base text-white truncate">2. สารประกอบและโครงสร้าง 3 มิติ (Molecular Structures)</h3>
+                        <p class="text-[10px] sm:text-xs text-gray-400 truncate">ศึกษาโครงสร้างแบบจุดและเส้น รูปร่าง VSEPR และสภาพขั้วของสารตัวอย่าง 14 ชนิด</p>
+                    </div>
+                </div>
+                <button onclick="closeCompoundModal()" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition shrink-0 ml-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="compoundSubSelector" class="flex items-center space-x-2 my-3 overflow-x-auto pb-1">
+                <span class="text-xs text-gray-400 shrink-0">เลือกสารตัวอย่าง (14 สาร):</span>
+                <div id="subButtonsContainer" class="flex items-center space-x-2"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-7 h-64 sm:h-80 rounded-2xl bg-gray-950 border border-gray-800 relative overflow-hidden flex items-center justify-center">
+                    <div id="bondCanvasContainer" class="w-full h-full block"></div>
+                    <div class="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-3 py-1 rounded-xl border border-gray-800 text-[11px] text-cyan-300 pointer-events-none">
+                        <i class="fa-solid fa-cube mr-1"></i> โครงสร้าง 3 มิติ (คลิกและลากเพื่อหมุน)
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 flex flex-col space-y-3">
+                    <div id="lewisPanel" class="bg-gray-900/90 p-3.5 rounded-2xl border border-gray-800 flex flex-col justify-center items-center text-center shadow-inner">
+                        <div class="text-xs font-semibold text-cyan-400 mb-1">สูตรโครงสร้างแบบจุดและแบบเส้น (Lewis Structure)</div>
+                        <div id="lewisDisplay" class="font-mono text-sm sm:text-base text-yellow-300 tracking-wider my-2">--</div>
+                        <div id="lewisNotes" class="text-[11px] text-gray-300 leading-relaxed">--</div>
+                    </div>
+
+                    <div id="bondDescription" class="flex-1 text-xs text-gray-300 bg-gray-900/80 p-3.5 rounded-2xl border border-gray-800 leading-relaxed overflow-y-auto max-h-36">
+                        <!-- Description text -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mixtureModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-3 sm:p-6">
+        <div class="glass-panel w-full max-w-4xl rounded-3xl p-4 sm:p-6 flex flex-col shadow-2xl border border-emerald-500/30 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-sm sm:text-base text-white truncate">3. สารละลาย คอลลอยด์ และสารแขวนลอย (Solutions, Colloids & Suspensions)</h3>
+                        <p class="text-[10px] sm:text-xs text-gray-400 truncate">เปรียบเทียบขนาดอนุภาค สมบัติ และตัวอย่างในชีวิตประจำวัน</p>
+                    </div>
+                </div>
+                <button onclick="closeMixtureModal()" class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition shrink-0 ml-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <!-- Solution Card -->
+                <div class="bg-gray-900/90 border border-cyan-500/30 p-4 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-cyan-300 text-sm">สารละลาย (Solution)</span>
+                            <span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/40">&lt; 1 นาโนเมตร</span>
+                        </div>
+                        <p class="text-xs text-gray-300 leading-relaxed mb-3">เป็นสารเนื้อเดียว อนุภาคมีขนาดเล็กมาก ไม่สามารถมองเห็นด้วยตาเปล่าหรือกล้องจุลทรรศน์ ผ่านกระดาษกรองและกระดาษเซลโลเฟานได้</p>
+                    </div>
+                    <div class="bg-gray-950/80 p-2.5 rounded-xl border border-gray-800 text-[11px] text-gray-400">
+                        <span class="text-cyan-400 font-semibold block mb-1">ตัวอย่าง:</span>
+                        น้ำเกลือ, น้ำตาลทรายละลายน้ำ, ทองเหลือง, อากาศ
+                    </div>
+                </div>
+
+                <!-- Colloid Card -->
+                <div class="bg-gray-900/90 border border-purple-500/30 p-4 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-purple-300 text-sm">คอลลอยด์ (Colloid)</span>
+                            <span class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/40">1 - 100 นาโนเมตร</span>
+                        </div>
+                        <p class="text-xs text-gray-300 leading-relaxed mb-3">เป็นสารเนื้อเดียว (หรือกึ่งเนื้อเดียว) แสดงปรากฏการณ์ทินดาล (Tyndall Effect) กระเจิงแสงได้ ผ่านกระดาษกรองได้แต่ผ่านกระดาษเซลโลเฟานไม่ได้</p>
+                    </div>
+                    <div class="bg-gray-950/80 p-2.5 rounded-xl border border-gray-800 text-[11px] text-gray-400">
+                        <span class="text-purple-400 font-semibold block mb-1">ตัวอย่าง:</span>
+                        นมสด, หมอก, ควัน, เนย, เจลาติน, ฟองสบู่
+                    </div>
+                </div>
+
+                <!-- Suspension Card -->
+                <div class="bg-gray-900/90 border border-amber-500/30 p-4 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-amber-300 text-sm">สารแขวนลอย (Suspension)</span>
+                            <span class="text-[10px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40">&gt; 100 นาโนเมตร</span>
+                        </div>
+                        <p class="text-xs text-gray-300 leading-relaxed mb-3">เป็นสารเนื้อผสม อนุภาคมีขนาดใหญ่ สามารถมองเห็นได้ด้วยตาเปล่า ตกตะกอนได้เมื่อตั้งทิ้งไว้ ไม่สามารถผ่านกระดาษกรองได้</p>
+                    </div>
+                    <div class="bg-gray-950/80 p-2.5 rounded-xl border border-gray-800 text-[11px] text-gray-400">
+                        <span class="text-amber-400 font-semibold block mb-1">ตัวอย่าง:</span>
+                        น้ำโคลน, น้ำแป้งสุก, ยา ให้น้ำแขวนตะกอน, น้ำคลอง
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getElectronShells(z) {
+            if (z === 1) return [1];
+            if (z === 3) return [2, 1];
+            if (z === 11) return [2, 8, 1];
+            if (z === 19) return [2, 8, 8, 1];
+            if (z === 37) return [2, 8, 18, 8, 1];
+            if (z === 55) return [2, 8, 18, 18, 8, 1];
+            if (z === 87) return [2, 8, 18, 32, 18, 8, 1];
+
+            if (z === 4) return [2, 2];
+            if (z === 12) return [2, 8, 2];
+            if (z === 20) return [2, 8, 8, 2];
+            if (z === 38) return [2, 8, 18, 8, 2];
+            if (z === 56) return [2, 8, 18, 18, 8, 2];
+            if (z === 88) return [2, 8, 18, 32, 18, 8, 2];
+
+            if (z === 5) return [2, 3];
+            if (z === 13) return [2, 8, 3];
+            if (z === 31) return [2, 8, 18, 3];
+            if (z === 49) return [2, 8, 18, 18, 3];
+            if (z === 81) return [2, 8, 18, 32, 18, 3];
+            if (z === 113) return [2, 8, 18, 32, 32, 18, 3];
+
+            if (z === 6) return [2, 4];
+            if (z === 14) return [2, 8, 4];
+            if (z === 32) return [2, 8, 18, 4];
+            if (z === 50) return [2, 8, 18, 18, 4];
+            if (z === 82) return [2, 8, 18, 32, 18, 4];
+            if (z === 114) return [2, 8, 18, 32, 32, 18, 4];
+
+            if (z === 7) return [2, 5];
+            if (z === 15) return [2, 8, 5];
+            if (z === 33) return [2, 8, 18, 5];
+            if (z === 51) return [2, 8, 18, 18, 5];
+            if (z === 83) return [2, 8, 18, 32, 18, 5];
+            if (z === 115) return [2, 8, 18, 32, 32, 18, 5];
+
+            if (z === 8) return [2, 6];
+            if (z === 16) return [2, 8, 6];
+            if (z === 34) return [2, 8, 18, 6];
+            if (z === 52) return [2, 8, 18, 18, 6];
+            if (z === 84) return [2, 8, 18, 32, 18, 6];
+            if (z === 116) return [2, 8, 18, 32, 32, 18, 6];
+
+            if (z === 9) return [2, 7];
+            if (z === 17) return [2, 8, 7];
+            if (z === 35) return [2, 8, 18, 7];
+            if (z === 53) return [2, 8, 18, 18, 7];
+            if (z === 85) return [2, 8, 18, 32, 18, 7];
+            if (z === 117) return [2, 8, 18, 32, 32, 18, 7];
+
+            if (z === 2) return [2];
+            if (z === 10) return [2, 8];
+            if (z === 18) return [2, 8, 8];
+            if (z === 36) return [2, 8, 18, 8];
+            if (z === 54) return [2, 8, 18, 18, 8];
+            if (z === 86) return [2, 8, 18, 32, 18, 8];
+            if (z === 118) return [2, 8, 18, 32, 32, 18, 8];
+
+            return [2];
+        }
+
+        const rawGroupAElements = [
+            // Period 1
+            { z: 1, symbol: "H", name: "Hydrogen", group: "IA", groupNum: 1, period: 1, a: 1, protons: 1, neutrons: 0, type: "nonmetal" },
+            { z: 2, symbol: "He", name: "Helium", group: "VIIIA", groupNum: 8, period: 1, a: 4, protons: 2, neutrons: 2, type: "noblegas" },
+
+            // Period 2
+            { z: 3, symbol: "Li", name: "Lithium", group: "IA", groupNum: 1, period: 2, a: 7, protons: 3, neutrons: 4, type: "metal" },
+            { z: 4, symbol: "Be", name: "Beryllium", group: "IIA", groupNum: 2, period: 2, a: 9, protons: 4, neutrons: 5, type: "metal" },
+            { z: 5, symbol: "B", name: "Boron", group: "IIIA", groupNum: 3, period: 2, a: 11, protons: 5, neutrons: 6, type: "metalloid" },
+            { z: 6, symbol: "C", name: "Carbon", group: "IVA", groupNum: 4, period: 2, a: 12, protons: 6, neutrons: 6, type: "nonmetal" },
+            { z: 7, symbol: "N", name: "Nitrogen", group: "VA", groupNum: 5, period: 2, a: 14, protons: 7, neutrons: 7, type: "nonmetal" },
+            { z: 8, symbol: "O", name: "Oxygen", group: "VIA", groupNum: 6, period: 2, a: 16, protons: 8, neutrons: 8, type: "nonmetal" },
+            { z: 9, symbol: "F", name: "Fluorine", group: "VIIA", groupNum: 7, period: 2, a: 19, protons: 9, neutrons: 10, type: "nonmetal" },
+            { z: 10, symbol: "Ne", name: "Neon", group: "VIIIA", groupNum: 8, period: 2, a: 20, protons: 10, neutrons: 10, type: "noblegas" },
+
+            // Period 3
+            { z: 11, symbol: "Na", name: "Sodium", group: "IA", groupNum: 1, period: 3, a: 23, protons: 11, neutrons: 12, type: "metal" },
+            { z: 12, symbol: "Mg", name: "Magnesium", group: "IIA", groupNum: 2, period: 3, a: 24, protons: 12, neutrons: 12, type: "metal" },
+            { z: 13, symbol: "Al", name: "Aluminium", group: "IIIA", groupNum: 3, period: 3, a: 27, protons: 13, neutrons: 14, type: "metal" },
+            { z: 14, symbol: "Si", name: "Silicon", group: "IVA", groupNum: 4, period: 3, a: 28, protons: 14, neutrons: 14, type: "metalloid" },
+            { z: 15, symbol: "P", name: "Phosphorus", group: "VA", groupNum: 5, period: 3, a: 31, protons: 15, neutrons: 16, type: "nonmetal" },
+            { z: 16, symbol: "S", name: "Sulfur", group: "VIA", groupNum: 6, period: 3, a: 32, protons: 16, neutrons: 16, type: "nonmetal" },
+            { z: 17, symbol: "Cl", name: "Chlorine", group: "VIIA", groupNum: 7, period: 3, a: 35.5, protons: 17, neutrons: 18, type: "nonmetal" },
+            { z: 18, symbol: "Ar", name: "Argon", group: "VIIIA", groupNum: 8, period: 3, a: 40, protons: 18, neutrons: 22, type: "noblegas" },
+
+            // Period 4
+            { z: 19, symbol: "K", name: "Potassium", group: "IA", groupNum: 1, period: 4, a: 39, protons: 19, neutrons: 20, type: "metal" },
+            { z: 20, symbol: "Ca", name: "Calcium", group: "IIA", groupNum: 2, period: 4, a: 40, protons: 20, neutrons: 20, type: "metal" },
+            { z: 31, symbol: "Ga", name: "Gallium", group: "IIIA", groupNum: 3, period: 4, a: 70, protons: 31, neutrons: 39, type: "metal" },
+            { z: 32, symbol: "Ge", name: "Germanium", group: "IVA", groupNum: 4, period: 4, a: 73, protons: 32, neutrons: 41, type: "metalloid" },
+            { z: 33, symbol: "As", name: "Arsenic", group: "VA", groupNum: 5, period: 4, a: 75, protons: 33, neutrons: 42, type: "metalloid" },
+            { z: 34, symbol: "Se", name: "Selenium", group: "VIA", groupNum: 6, period: 4, a: 79, protons: 34, neutrons: 45, type: "nonmetal" },
+            { z: 35, symbol: "Br", name: "Bromine", group: "VIIA", groupNum: 7, period: 4, a: 80, protons: 35, neutrons: 45, type: "nonmetal" },
+            { z: 36, symbol: "Kr", name: "Krypton", group: "VIIIA", groupNum: 8, period: 4, a: 84, protons: 36, neutrons: 48, type: "noblegas" },
+
+            // Period 5
+            { z: 37, symbol: "Rb", name: "Rubidium", group: "IA", groupNum: 1, period: 5, a: 85, protons: 37, neutrons: 48, type: "metal" },
+            { z: 38, symbol: "Sr", name: "Strontium", group: "IIA", groupNum: 2, period: 5, a: 88, protons: 38, neutrons: 50, type: "metal" },
+            { z: 49, symbol: "In", name: "Indium", group: "IIIA", groupNum: 3, period: 5, a: 115, protons: 49, neutrons: 66, type: "metal" },
+            { z: 50, symbol: "Sn", name: "Tin", group: "IVA", groupNum: 4, period: 5, a: 119, protons: 50, neutrons: 69, type: "metal" },
+            { z: 51, symbol: "Sb", name: "Antimony", group: "VA", groupNum: 5, period: 5, a: 122, protons: 51, neutrons: 71, type: "metalloid" },
+            { z: 52, symbol: "Te", name: "Tellurium", group: "VIA", groupNum: 6, period: 5, a: 128, protons: 52, neutrons: 76, type: "metalloid" },
+            { z: 53, symbol: "I", name: "Iodine", group: "VIIA", groupNum: 7, period: 5, a: 127, protons: 53, neutrons: 74, type: "nonmetal" },
+            { z: 54, symbol: "Xe", name: "Xenon", group: "VIIIA", groupNum: 8, period: 5, a: 131, protons: 54, neutrons: 77, type: "noblegas" },
+
+            // Period 6
+            { z: 55, symbol: "Cs", name: "Caesium", group: "IA", groupNum: 1, period: 6, a: 133, protons: 55, neutrons: 78, type: "metal" },
+            { z: 56, symbol: "Ba", name: "Barium", group: "IIA", groupNum: 2, period: 6, a: 137, protons: 56, neutrons: 81, type: "metal" },
+            { z: 81, symbol: "Tl", name: "Thallium", group: "IIIA", groupNum: 3, period: 6, a: 204, protons: 81, neutrons: 123, type: "metal" },
+            { z: 82, symbol: "Pb", name: "Lead", group: "IVA", groupNum: 4, period: 6, a: 207, protons: 82, neutrons: 125, type: "metal" },
+            { z: 83, symbol: "Bi", name: "Bismuth", group: "VA", groupNum: 5, period: 6, a: 209, protons: 83, neutrons: 126, type: "metal" },
+            { z: 84, symbol: "Po", name: "Polonium", group: "VIA", groupNum: 6, period: 6, a: 209, protons: 84, neutrons: 125, type: "metalloid" },
+            { z: 85, symbol: "At", name: "Astatine", group: "VIIA", groupNum: 7, period: 6, a: 210, protons: 85, neutrons: 125, type: "metalloid" },
+            { z: 86, symbol: "Rn", name: "Radon", group: "VIIIA", groupNum: 8, period: 6, a: 222, protons: 86, neutrons: 136, type: "noblegas" },
+
+            // Period 7
+            { z: 87, symbol: "Fr", name: "Francium", group: "IA", groupNum: 1, period: 7, a: 223, protons: 87, neutrons: 136, type: "metal" },
+            { z: 88, symbol: "Ra", name: "Radium", group: "IIA", groupNum: 2, period: 7, a: 226, protons: 88, neutrons: 138, type: "metal" },
+            { z: 113, symbol: "Nh", name: "Nihonium", group: "IIIA", groupNum: 3, period: 7, a: 286, protons: 113, neutrons: 173, type: "metal" },
+            { z: 114, symbol: "Fl", name: "Flerovium", group: "IVA", groupNum: 4, period: 7, a: 289, protons: 114, neutrons: 175, type: "metal" },
+            { z: 115, symbol: "Mc", name: "Moscovium", group: "VA", groupNum: 5, period: 7, a: 290, protons: 115, neutrons: 175, type: "metal" },
+            { z: 116, symbol: "Lv", name: "Livermorium", group: "VIA", groupNum: 6, period: 7, a: 293, protons: 116, neutrons: 177, type: "metal" },
+            { z: 117, symbol: "Ts", name: "Tennessine", group: "VIIA", groupNum: 7, period: 7, a: 294, protons: 117, neutrons: 177, type: "metalloid" },
+            { z: 118, symbol: "Og", name: "Oganesson", group: "VIIIA", groupNum: 8, period: 7, a: 294, protons: 118, neutrons: 176, type: "noblegas" }
+        ];
+
+        const groupAElements = rawGroupAElements.map(el => ({
+            ...el,
+            shells: getElectronShells(el.z)
+        }));
+
+        let currentElementZ = 1;
+        let scene, camera, renderer, atomGroup;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let electronMeshes = [];
+        let clock = new THREE.Clock();
+
+        let bScene, bCamera, bRenderer, bGroup;
+        let currentSubExample = 'H2O';
+        let isBondDragging = false;
+        let bondPrevMouse = { x: 0, y: 0 };
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 18);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x38bdf8, 2, 50);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+
+            atomGroup = new THREE.Group();
+            scene.add(atomGroup);
+
+            buildAtom(currentElementZ);
+
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+
+                atomGroup.rotation.y += deltaX * 0.008;
+                atomGroup.rotation.x += deltaY * 0.008;
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            window.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+                atomGroup.rotation.y += deltaX * 0.008;
+                atomGroup.rotation.x += deltaY * 0.008;
+
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+
+            window.addEventListener('touchend', () => { isDragging = false; });
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                camera.position.z += e.deltaY * 0.01;
+                camera.position.z = Math.max(8, Math.min(35, camera.position.z));
+            }, { passive: false });
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if (container && renderer && camera) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+
+            const bondContainer = document.getElementById('bondCanvasContainer');
+            if (bondContainer && bRenderer && bCamera) {
+                bCamera.aspect = bondContainer.clientWidth / bondContainer.clientHeight;
+                bCamera.updateProjectionMatrix();
+                bRenderer.setSize(bondContainer.clientWidth, bondContainer.clientHeight);
+            }
+        }
+
+        function buildAtom(z) {
+            currentElementZ = z;
+            const element = groupAElements.find(el => el.z === z) || groupAElements[0];
+
+            document.getElementById('centerBadgeSymbol').innerText = element.symbol;
+            document.getElementById('centerBadgeName').innerText = element.name;
+            document.getElementById('centerBadgeZ').innerText = element.z;
+            document.getElementById('centerBadgeGroup').innerText = element.group;
+            document.getElementById('centerBadgePeriod').innerText = element.period;
+            document.getElementById('statAHeader').innerText = element.a;
+            document.getElementById('statProtons').innerText = element.protons;
+            document.getElementById('statNeutrons').innerText = element.neutrons;
+            document.getElementById('statElectrons').innerText = element.z;
+
+            const typeTag = document.getElementById('centerBadgeTypeTag');
+            if (element.type === 'metal') {
+                typeTag.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-950/80 text-blue-300 border border-blue-500/40";
+                typeTag.innerText = "โลหะ";
+            } else if (element.type === 'metalloid') {
+                typeTag.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40";
+                typeTag.innerText = "กึ่งโลหะ";
+            } else if (element.type === 'noblegas') {
+                typeTag.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-purple-950/80 text-purple-300 border border-purple-500/40";
+                typeTag.innerText = "แก๊สมีตระกูล";
+            } else {
+                typeTag.className = "px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-500/40";
+                typeTag.innerText = "อโลหะ";
+            }
+
+            const shellContainer = document.getElementById('shellConfigContainer');
+            shellContainer.innerHTML = '';
+            const shellNames = ['K', 'L', 'M', 'N', 'O', 'P', 'Q'];
+            element.shells.forEach((count, idx) => {
+                const div = document.createElement('div');
+                div.className = "px-1.5 py-0.5 rounded-lg bg-gray-800/80 border border-gray-700 text-[10px] flex items-center space-x-1 shadow-sm shrink-0";
+                div.innerHTML = `<span class="text-cyan-300 font-mono">${shellNames[idx] || (idx+1)}:</span><span class="font-mono text-yellow-300 font-bold">${count}</span>`;
+                shellContainer.appendChild(div);
+            });
+
+            while(atomGroup.children.length > 0){
+                atomGroup.remove(atomGroup.children[0]);
+            }
+            electronMeshes = [];
+
+            const nucleusGroup = new THREE.Group();
+            const totalNucleons = element.protons + element.neutrons;
+            const coreRadius = Math.max(0.5, Math.cbrt(totalNucleons) * 0.42);
+
+            for (let i = 0; i < totalNucleons; i++) {
+                const isProton = i < element.protons;
+                const geometry = new THREE.SphereGeometry(isProton ? 0.31 : 0.29, 12, 12);
+                const material = new THREE.MeshPhongMaterial({
+                    color: isProton ? 0xef4444 : 0x3b82f6,
+                    shininess: 70,
+                    emissive: isProton ? 0x220000 : 0x001122
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+
+                const u = Math.random();
+                const v = Math.random();
+                const theta = u * 2.0 * Math.PI;
+                const phi = Math.acos(2.0 * v - 1.0);
+                const r = Math.cbrt(Math.random()) * coreRadius * 0.8;
+                
+                sphere.position.set(
+                    r * Math.sin(phi) * Math.cos(theta),
+                    r * Math.sin(phi) * Math.sin(theta),
+                    r * Math.cos(phi)
+                );
+                nucleusGroup.add(sphere);
+            }
+            atomGroup.add(nucleusGroup);
+
+            element.shells.forEach((electronCount, shellIdx) => {
+                const orbitRadius = 2.8 + shellIdx * 1.3;
+
+                const ringGeo = new THREE.RingGeometry(orbitRadius - 0.02, orbitRadius + 0.02, 48);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
+                const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+                
+                ringMesh.rotation.x = Math.PI / 2 + (shellIdx * 0.55);
+                ringMesh.rotation.y = shellIdx * 0.7;
+                atomGroup.add(ringMesh);
+
+                for (let e = 0; e < electronCount; e++) {
+                    const angle = (e / electronCount) * Math.PI * 2;
+                    const eGeo = new THREE.SphereGeometry(0.16, 12, 12);
+                    const eMat = new THREE.MeshPhongMaterial({ color: 0xfacc15, emissive: 0x3d3200, shininess: 80 });
+                    const eMesh = new THREE.Mesh(eGeo, eMat);
+
+                    eMesh.userData = {
+                        radius: orbitRadius,
+                        angle: angle,
+                        speed: 0.7 + (shellIdx * 0.15),
+                        inclinationX: ringMesh.rotation.x,
+                        inclinationY: ringMesh.rotation.y
+                    };
+                    atomGroup.add(eMesh);
+                    electronMeshes.push(eMesh);
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            electronMeshes.forEach(e => {
+                e.userData.angle += e.userData.speed * delta;
+                const r = e.userData.radius;
+                const a = e.userData.angle;
+
+                const x = Math.cos(a) * r;
+                const z = Math.sin(a) * r;
+                
+                const pos = new THREE.Vector3(x, 0, z);
+                pos.applyAxisAngle(new THREE.Vector3(1, 0, 0), e.userData.inclinationX);
+                pos.applyAxisAngle(new THREE.Vector3(0, 1, 0), e.userData.inclinationY);
+                e.position.copy(pos);
+            });
+
+            if (atomGroup && !isDragging) {
+                atomGroup.rotation.y += 0.0015;
+            }
+
+            if (bGroup) {
+                bGroup.rotation.y += 0.003;
+            }
+
+            if (bRenderer && bScene && bCamera) {
+                bRenderer.render(bScene, bCamera);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function openPeriodicModal() {
+            const container = document.getElementById('periodicGridContainer');
+            container.innerHTML = '';
+
+            const groupNames = ["IA", "IIA", "IIIA", "IVA", "VA", "VIA", "VIIA", "VIIIA"];
+
+            // Create Grid Table: 8 columns for groups, 7 rows for periods (plus header row)
+            let tableHTML = `
+                <div class="grid grid-cols-9 gap-2">
+                    <div class="bg-gray-950 p-2.5 rounded-xl border border-gray-800 text-center font-bold text-xs text-cyan-400 flex items-center justify-center">คาบ \\ หมู่</div>
+            `;
+            groupNames.forEach((gName, idx) => {
+                tableHTML += `<div class="bg-gray-900/90 p-2.5 rounded-xl border border-gray-800 text-center font-bold text-xs text-cyan-300">หมู่ ${gName}</div>`;
+            });
+            tableHTML += `</div>`;
+
+            for (let period = 1; period <= 7; period++) {
+                tableHTML += `<div class="grid grid-cols-9 gap-2 mt-2">`;
+                // Period header cell
+                tableHTML += `<div class="bg-gray-900/90 p-2.5 rounded-xl border border-gray-800 text-center font-bold text-xs text-yellow-400 flex items-center justify-center">คาบ ${period}</div>`;
+
+                for (let gNum = 1; gNum <= 8; gNum++) {
+                    const el = groupAElements.find(item => item.period === period && item.groupNum === gNum);
+                    if (el) {
+                        let typeBadgeBg = "";
+                        let typeLabel = "";
+                        if (el.type === 'metal') {
+                            typeBadgeBg = "bg-blue-950/70 border-blue-500/40 text-blue-300";
+                            typeLabel = "โลหะ";
+                        } else if (el.type === 'metalloid') {
+                            typeBadgeBg = "bg-emerald-950/70 border-emerald-500/40 text-emerald-300";
+                            typeLabel = "กึ่งโลหะ";
+                        } else if (el.type === 'noblegas') {
+                            typeBadgeBg = "bg-purple-950/70 border-purple-500/40 text-purple-300";
+                            typeLabel = "แก๊สมีตระกูล";
+                        } else {
+                            typeBadgeBg = "bg-amber-950/70 border-amber-500/40 text-amber-300";
+                            typeLabel = "อโลหะ";
+                        }
+
+                        const isSelected = (el.z === currentElementZ);
+                        const shellStr = el.shells.join(', ');
+
+                        tableHTML += `
+                            <button onclick="selectElementAndClose(${el.z})" class="p-2 rounded-xl border text-left transition flex flex-col justify-between space-y-1 ${isSelected ? 'bg-cyan-600/30 border-cyan-400 text-white shadow-md shadow-cyan-500/20' : 'bg-gray-950/60 border-gray-800/80 hover:bg-gray-800 text-gray-300'}">
+                                <div class="flex items-center justify-between w-full">
+                                    <div class="flex items-center space-x-1.5 min-w-0">
+                                        <span class="w-6 h-6 rounded-md ${typeBadgeBg} border flex items-center justify-center font-bold text-[11px] shrink-0">${el.symbol}</span>
+                                        <div class="min-w-0">
+                                            <div class="text-[11px] font-bold truncate">${el.name}</div>
+                                            <div class="text-[9px] text-gray-400 truncate">${typeLabel}</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-[9px] font-mono text-cyan-300">
+                                        <div>Z=${el.z}</div>
+                                    </div>
+                                </div>
+                                <div class="text-[9px] bg-gray-900/80 px-1.5 py-0.5 rounded border border-gray-800 flex items-center justify-between">
+                                    <span class="text-gray-400">e⁻:</span>
+                                    <span class="font-mono text-yellow-300 font-bold">[${shellStr}]</span>
+                                </div>
+                            </button>
+                        `;
+                    } else {
+                        tableHTML += `<div class="bg-gray-950/30 border border-dashed border-gray-800/50 rounded-xl p-2 flex items-center justify-center text-[10px] text-gray-600">-</div>`;
+                    }
+                }
+                tableHTML += `</div>`;
+            }
+
+            container.innerHTML = tableHTML;
+            document.getElementById('periodicModal').classList.remove('hidden');
+        }
+
+        function selectElementAndClose(z) {
+            buildAtom(z);
+            closePeriodicModal();
+        }
+
+        function closePeriodicModal() {
+            document.getElementById('periodicModal').classList.add('hidden');
+        }
+
+        // Expanded molecular examples (14 compounds including Sugar, Caustic Soda, Baking Powder)
+        const molecularExamples = {
+            'H2O': {
+                name: 'น้ำ (H₂O)',
+                lewisDot: 'H : O : H  (มีคู่อิเล็กตรอนอิสระ 2 คู่บน O)',
+                lewisLine: 'H — O — H',
+                shape: 'ทรงมุมงบ (Bent / V-shape)',
+                angle: 'ประมาณ 104.5°',
+                polarity: 'มีขั้ว (Polar Molecule)',
+                desc: 'โมเลกุลน้ำประกอบด้วยอะตอม H 2 อะตอมสร้างพันธะเดี่ยวกับ O มีเวเลนซ์อิเล็กตรอนคู่โดดเดี่ยว (Lone pair) 2 คู่ผลักกัน ทำให้มุมพันธะแคบลงเหลือ 104.5° และมีสภาพขั้วชัดเจนเนื่องจากสภาพไฟฟ้าลบต่างกันมาก'
+            },
+            'CO2': {
+                name: 'คาร์บอนไดออกไซด์ (CO₂)',
+                lewisDot: ': O :: C :: O :',
+                lewisLine: 'O = C = O',
+                shape: 'เส้นตรง (Linear)',
+                angle: '180°',
+                polarity: 'ไม่มีขั้ว (Nonpolar Molecule)',
+                desc: 'คาร์บอนสร้างพันธะคู่กับออกซิเจนทั้งสองข้าง ไม่มีคู่อิเล็กตรอนอิสระเหลือบนอะตอมกลาง C รูปร่างจึงเป็นเส้นตรงและแรงดึงดูดหักล้างกันหมดทำให้โมเลกุลไม่มีขั้ว'
+            },
+            'NH3': {
+                name: 'แอมโมเนีย (NH₃)',
+                lewisDot: '    H\n    |\nH : N : H  (มีอิเล็กตรอนคู่โดดเดี่ยว 1 คู่บน N)',
+                lewisLine: '    H\n    |\nH — N — H',
+                shape: 'พีระมิดฐานสามเหลี่ยม (Trigonal Pyramidal)',
+                angle: 'ประมาณ 107°',
+                polarity: 'มีขั้ว (Polar Molecule)',
+                desc: 'ไนโตรเจนมีเวเลนซ์อิเล็กตรอน 5 ใช้สร้างพันธะกับ H 3 ตัว เหลือ 1 คู่โดดเดี่ยว ผลักให้พันธะลงมาเป็นรูปพีระมิดฐานสามเหลี่ยมและมีสภาพขั้ว'
+            },
+            'CH4': {
+                name: 'มีเทน (CH₄)',
+                lewisDot: '    H\n    |\nH : C : H\n    |\n    H',
+                lewisLine: '    H\n    |\nH — C — H\n    |\n    H',
+                shape: 'ทรงสี่หน้า (Tetrahedral)',
+                angle: '109.5°',
+                polarity: 'ไม่มีขั้ว (Nonpolar Molecule)',
+                desc: 'คาร์บอนสร้างพันธะเดี่ยว 4 พันธะกับไฮโดรเจนครบออกเตต รูปร่างเป็นทรงสี่หน้าปกติ สมมาตรสมบูรณ์ สภาพขั้วหักล้างกันเป็นศูนย์'
+            },
+            'HCl': {
+                name: 'ไฮโดรเจนคลอไรด์ (HCl)',
+                lewisDot: 'H : Cl : (มีอิเล็กตรอนคู่โดดเดี่ยว 3 คู่บน Cl)',
+                lewisLine: 'H — Cl',
+                shape: 'เส้นตรง / สองอะตอม (Linear)',
+                angle: '180°',
+                polarity: 'มีขั้วสูงมาก (High Polar Molecule)',
+                desc: 'ประกอบด้วยอะตอมอโลหะ 2 ชนิด Cl มีค่าอิเล็กโทรเนกาติวิตีสูงมาก ดึงกลุ่มหมออิเล็กตรอนเข้าหาตัว ทำให้โมเลกุลมีขั้วถาวรชัดเจน'
+            },
+            'O2': {
+                name: 'แก๊สออกซิเจน (O₂)',
+                lewisDot: ': O :: O :',
+                lewisLine: 'O = O',
+                shape: 'เส้นตรง (Linear)',
+                angle: '180°',
+                polarity: 'ไม่มีขั้ว (Nonpolar Molecule)',
+                desc: 'เกิดจากอะตอมชนิดเดียวกัน 2 อะตอมสร้างพันธะคู่วิเคราะห์ ค่า EN เท่ากัน 100% จึงไม่มีความแตกต่างของสภาพไฟฟ้าลบ เป็นโมเลกุลไม่มีขั้ว'
+            },
+            'N2': {
+                name: 'แก๊สไนโตรเจน (N₂)',
+                lewisDot: ': N ::: N :',
+                lewisLine: 'N ≡ N',
+                shape: 'เส้นตรง (Linear)',
+                angle: '180°',
+                polarity: 'ไม่มีขั้ว (Nonpolar Molecule)',
+                desc: 'อะตอมไนโตรเจน 2 อะตอมยึดเหนี่ยวกันด้วยพันธะสาม มีความเสถียรสูงมาก เป็นโมเลกุลสมมาตรและไม่มีขั้ว'
+            },
+            'HCLO': {
+                name: 'กรดไฮโปคลอรัส (HOCl)',
+                lewisDot: 'H — O : Cl :',
+                lewisLine: 'H — O — Cl',
+                shape: 'ทรงมุมงบ (Bent)',
+                angle: 'ประมาณ 103°',
+                polarity: 'มีขั้ว (Polar Molecule)',
+                desc: 'โครงสร้างแบบมุมงบเนื่องจากอะตอมกลาง O มีอิเล็กตรอนคู่โดดเดี่ยว 2 คู่ โมเลกุลไม่สมมาตรและมีสภาพขั้วสูง ละลายน้ำได้ดีเยี่ยม'
+            },
+            'PH3': {
+                name: 'ฟอสฟีน (PH₃)',
+                lewisDot: '    H\n    |\nH : P : H',
+                lewisLine: '    H\n    |\nH — P — H',
+                shape: 'พีระมิดฐานสามเหลี่ยม (Trigonal Pyramidal)',
+                angle: 'ประมาณ 93.5°',
+                polarity: 'มีขั้วน้อย (Low Polar Molecule)',
+                desc: 'มีโครงสร้างคล้ายแอมโมเนียแต่อะตอมกลางคือฟอสฟอรัส (P) ค่า EN ระหว่าง P กับ H ใกล้เคียงกันมาก ทำให้สภาพขั้วของโมเลกุลค่อนข้างน้อย'
+            },
+            'SO2': {
+                name: 'ซัลเฟอร์ไดออกไซด์ (SO₂)',
+                lewisDot: ': O = S — O :',
+                lewisLine: 'O = S — O',
+                shape: 'ทรงมุมงบ (Bent)',
+                angle: 'ประมาณ 119°',
+                polarity: 'มีขั้ว (Polar Molecule)',
+                desc: 'กำมะถันเป็นอะตอมกลางมีอิเล็กตรอนคู่โดดเดี่ยวเหลือ 1 คู่ รูปร่างจึงงอ และเนื่องจากมุมพันธะไม่เป็นเส้นตรง 180° สภาพขั้วจึงไม่หักล้างกัน'
+            },
+            'BF3': {
+                name: 'โบรอนไตรฟลูออไรด์ (BF₃)',
+                lewisDot: '     F\n     |\n F — B — F',
+                lewisLine: '     F\n     |\n F — B — F',
+                shape: 'สามเหลี่ยมแบนราบ (Trigonal Planar)',
+                angle: '120°',
+                polarity: 'ไม่มีขั้ว (Nonpolar Molecule)',
+                desc: 'โบรอนเป็นอะตอมกลาง (ไม่ครบออกเตต มี 6 อิเล็กตรอน) สร้างพันธะเดี่ยวกับ F 3 อะตอม รูปร่างสามเหลี่ยมแบนราบสมมาตร แรงดึงดูดหักล้างกันเป็นศูนย์'
+            },
+            'C6H12O6': {
+                name: 'น้ำตาลกลูโคส (C₆H₁₂O₆)',
+                lewisDot: 'โครงสร้างวงแหวน 6 เหลี่ยม (Pyranose Ring)',
+                lewisLine: 'HOCH₂—[CH(OH)]₄—CHO',
+                shape: 'โครงสร้างวงแหวน (Cyclic Pyranose)',
+                angle: 'ประมาณ 109.5°',
+                polarity: 'มีขั้วสูง (High Polar Organic Compound)',
+                desc: 'เป็นสารอินทรีย์โมเลกุลใหญ่ประกอบด้วย C, H, O มีหมู่ไฮดรอกซิล (-OH) จำนวนมาก ทำให้เกิดพันธะไฮโดรเจนกับน้ำได้ดีเยี่ยม ละลายน้ำได้ดี ให้พลังงานแก่สิ่งมีชีวิต'
+            },
+            'NaOH': {
+                name: 'โซดาไฟ / โซเดียมไฮดรอกไซด์ (NaOH)',
+                lewisDot: 'Na⁺ [: O — H]⁻',
+                lewisLine: 'Na⁺ — OH⁻',
+                shape: 'โครงผลึกไอออนิก (Ionic Crystal Lattice)',
+                angle: '180° (ระหว่างไอออน)',
+                polarity: 'ประกอบด้วยไอออน (Ionic Compound)',
+                desc: 'เป็นสารประกอบไอออนิกแก่ เกิดจากไอออนบวก Na⁺ และไอออนลบ OH⁻ ยึดเหนี่ยวกันด้วยแรงดึงดูดระหว่างประจุไฟฟ้า ละลายน้ำได้สารละลายเบสแก่ที่มีฤทธิ์กัดกร่อนสูง'
+            },
+            'NaHCO3': {
+                name: 'ผงฟู / โซเดียมไบคาร์บอเนต (NaHCO₃)',
+                lewisDot: 'Na⁺ [HCO₃]⁻ (มีพันธะโคเวเลนต์ภายในไอออนบัยคาร์บอเนต)',
+                lewisLine: 'Na⁺ — O — C(=O)—OH',
+                shape: 'โครงผลึกไอออนิก ผสมโคเวเลนต์ภายใน',
+                angle: '120° (ที่อะตอม C กลาง)',
+                polarity: 'สารประกอบไอออนิกและโคเวเลนต์ (Ionic/Covalent)',
+                desc: 'ผงฟูหรือโซเดียมไฮดรอกซิไบคาร์บอเนต เมื่อโดนความร้อนหรือกรดจะสลายตัวให้แก๊สคาร์บอนไดออกไซด์ (CO₂) ออกมา ทำให้ขนมฟูพองตัว'
+            }
+        };
+
+        function initBond3D() {
+            const container = document.getElementById('bondCanvasContainer');
+            if (!container) return;
+
+            if (bRenderer) return;
+
+            bScene = new THREE.Scene();
+            bCamera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            bCamera.position.set(0, 0, 15);
+
+            bRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            bRenderer.setSize(container.clientWidth, container.clientHeight);
+            bRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(bRenderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            bScene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x38bdf8, 2, 50);
+            pointLight.position.set(10, 10, 10);
+            bScene.add(pointLight);
+
+            bGroup = new THREE.Group();
+            bScene.add(bGroup);
+
+            container.addEventListener('mousedown', (e) => {
+                isBondDragging = true;
+                bondPrevMouse = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isBondDragging || !bGroup) return;
+                const deltaX = e.clientX - bondPrevMouse.x;
+                const deltaY = e.clientY - bondPrevMouse.y;
+
+                bGroup.rotation.y += deltaX * 0.008;
+                bGroup.rotation.x += deltaY * 0.008;
+
+                bondPrevMouse = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => { isBondDragging = false; });
+        }
+
+        function openCompoundModal() {
+            document.getElementById('compoundModal').classList.remove('hidden');
+            setTimeout(() => {
+                initIDAndRenderBond();
+            }, 50);
+        }
+
+        function initIDAndRenderBond() {
+            initBond3D();
+            selectCompound('H2O');
+            onWindowResize();
+        }
+
+        function closeCompoundModal() {
+            document.getElementById('compoundModal').classList.add('hidden');
+        }
+
+        function openMixtureModal() {
+            document.getElementById('mixtureModal').classList.remove('hidden');
+        }
+
+        function closeMixtureModal() {
+            document.getElementById('mixtureModal').classList.add('hidden');
+        }
+
+        function selectCompound(key) {
+            currentSubExample = key;
+            const subBtns = document.getElementById('subButtonsContainer');
+            subBtns.innerHTML = '';
+
+            const keys = Object.keys(molecularExamples);
+            keys.forEach(k => {
+                const b = document.createElement('button');
+                b.className = `px-2.5 py-1 rounded-xl text-xs font-semibold border ${currentSubExample === k ? 'bg-purple-600 border-purple-400 text-white shadow-md' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'}`;
+                b.innerText = k;
+                b.onclick = () => selectCompound(k);
+                subBtns.appendChild(b);
+            });
+
+            const data = molecularExamples[currentSubExample];
+            document.getElementById('lewisDisplay').innerHTML = `<span class="text-yellow-300">${data.lewisLine}</span><br><span class="text-[11px] text-gray-400">จุด: ${data.lewisDot.replace(/\n/g, '<br>')}</span>`;
+            document.getElementById('lewisNotes').innerHTML = `รูปร่าง: <b>${data.shape}</b> | มุมพันธะ: <b>${data.angle}</b> | สภาพขั้ว: <b>${data.polarity}</b>`;
+            document.getElementById('bondDescription').innerHTML = `<b>รายละเอียดสารประกอบ (${data.name}):</b> ${data.desc}`;
+
+            if (bGroup) {
+                while(bGroup.children.length > 0) {
+                    bGroup.remove(bGroup.children[0]);
+                }
+            } else {
+                bGroup = new THREE.Group();
+                if (bScene) bScene.add(bGroup);
+            }
+
+            buildMolecular3D(currentSubExample);
+        }
+
+        function buildMolecular3D(ex) {
+            if (ex === 'H2O') {
+                const oGeo = new THREE.SphereGeometry(0.8, 24, 24);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 80 });
+                const oxygen = new THREE.Mesh(oGeo, oMat);
+                bGroup.add(oxygen);
+
+                const hGeo = new THREE.SphereGeometry(0.45, 18, 18);
+                const hMat = new THREE.MeshPhongMaterial({ color: 0xfacc15, shininess: 70 });
+                
+                const h1 = new THREE.Mesh(hGeo, hMat);
+                h1.position.set(-1.8, 1.2, 0);
+                bGroup.add(h1);
+
+                const h2 = new THREE.Mesh(hGeo, hMat);
+                h2.position.set(1.8, 1.2, 0);
+                bGroup.add(h2);
+
+                createCylinderBond(new THREE.Vector3(0,0,0), new THREE.Vector3(-1.8, 1.2, 0));
+                createCylinderBond(new THREE.Vector3(0,0,0), new THREE.Vector3(1.8, 1.2, 0));
+            } else if (ex === 'CO2') {
+                const cGeo = new THREE.SphereGeometry(0.75, 24, 24);
+                const cMat = new THREE.MeshPhongMaterial({ color: 0x64748b, shininess: 80 });
+                const carbon = new THREE.Mesh(cGeo, cMat);
+                bGroup.add(carbon);
+
+                const oGeo = new THREE.SphereGeometry(0.65, 24, 24);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 80 });
+                
+                const o1 = new THREE.Mesh(oGeo, oMat);
+                o1.position.set(-2.2, 0, 0);
+                bGroup.add(o1);
+
+                const o2 = new THREE.Mesh(oGeo, oMat);
+                o2.position.set(2.2, 0, 0);
+                bGroup.add(o2);
+
+                createCylinderBond(new THREE.Vector3(0,0,0), new THREE.Vector3(-2.2, 0, 0), 0.1);
+                createCylinderBond(new THREE.Vector3(0,0,0), new THREE.Vector3(2.2, 0, 0), 0.1);
+            } else if (ex === 'NH3') {
+                const nGeo = new THREE.SphereGeometry(0.8, 24, 24);
+                const nMat = new THREE.MeshPhongMaterial({ color: 0x3b82f6, shininess: 80 });
+                const nitrogen = new THREE.Mesh(nGeo, nMat);
+                nitrogen.position.set(0, 0.3, 0);
+                bGroup.add(nitrogen);
+
+                const hGeo = new THREE.SphereGeometry(0.45, 18, 18);
+                const hMat = new THREE.MeshPhongMaterial({ color: 0xfacc15, shininess: 70 });
+                
+                const h1 = new THREE.Mesh(hGeo, hMat);
+                h1.position.set(0, -1.2, 1.5);
+                const h2 = new THREE.Mesh(hGeo, hMat);
+                h2.position.set(-1.4, -1.2, -1.0);
+                const h3 = new THREE.Mesh(hGeo, hMat);
+                h3.position.set(1.4, -1.2, -1.0);
+                bGroup.add(h1); bGroup.add(h2); bGroup.add(h3);
+
+                createCylinderBond(nitrogen.position, h1.position);
+                createCylinderBond(nitrogen.position, h2.position);
+                createCylinderBond(nitrogen.position, h3.position);
+            } else if (ex === 'CH4') {
+                const cGeo = new THREE.SphereGeometry(0.75, 24, 24);
+                const cMat = new THREE.MeshPhongMaterial({ color: 0x64748b, shininess: 80 });
+                const carbon = new THREE.Mesh(cGeo, cMat);
+                bGroup.add(carbon);
+
+                const hGeo = new THREE.SphereGeometry(0.45, 18, 18);
+                const hMat = new THREE.MeshPhongMaterial({ color: 0xfacc15, shininess: 70 });
+
+                const positions = [
+                    new THREE.Vector3(0, 1.8, 0),
+                    new THREE.Vector3(1.6, -0.8, 1.0),
+                    new THREE.Vector3(-1.6, -0.8, 1.0),
+                    new THREE.Vector3(0, -0.8, -1.8)
+                ];
+
+                positions.forEach(pos => {
+                    const h = new THREE.Mesh(hGeo, hMat);
+                    h.position.copy(pos);
+                    bGroup.add(h);
+                    createCylinderBond(new THREE.Vector3(0,0,0), pos);
+                });
+            } else if (ex === 'HCl') {
+                const hGeo = new THREE.SphereGeometry(0.45, 18, 18);
+                const hMat = new THREE.MeshPhongMaterial({ color: 0xfacc15, shininess: 70 });
+                const h = new THREE.Mesh(hGeo, hMat);
+                h.position.set(-1.2, 0, 0);
+                bGroup.add(h);
+
+                const clGeo = new THREE.SphereGeometry(0.9, 24, 24);
+                const clMat = new THREE.MeshPhongMaterial({ color: 0x22c55e, shininess: 80 });
+                const cl = new THREE.Mesh(clGeo, clMat);
+                cl.position.set(1.0, 0, 0);
+                bGroup.add(cl);
+
+                createCylinderBond(h.position, cl.position);
+            } else if (ex === 'O2') {
+                const oGeo = new THREE.SphereGeometry(0.8, 24, 24);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 80 });
+                const o1 = new THREE.Mesh(oGeo, oMat);
+                o1.position.set(-1.1, 0, 0);
+                bGroup.add(o1);
+
+                const o2 = new THREE.Mesh(oGeo, oMat);
+                o2.position.set(1.1, 0, 0);
+                bGroup.add(o2);
+
+                createCylinderBond(o1.position, o2.position, 0.1);
+            } else if (ex === 'N2') {
+                const nGeo = new THREE.SphereGeometry(0.85, 24, 24);
+                const nMat = new THREE.MeshPhongMaterial({ color: 0x3b82f6, shininess: 80 });
+                const n1 = new THREE.Mesh(nGeo, nMat);
+                n1.position.set(-1.1, 0, 0);
+                bGroup.add(n1);
+
+                const n2 = new THREE.Mesh(nGeo, nMat);
+                n2.position.set(1.1, 0, 0);
+                bGroup.add(n2);
+
+                createCylinderBond(n1.position, n2.position, 0.12);
+            } else if (ex === 'HCLO') {
+                const hGeo = new THREE.SphereGeometry(0.4, 18, 18);
+                const hMat = new THREE.MeshPhongMaterial({ color: 0xfacc15, shininess: 70 });
+                const h = new THREE.Mesh(hGeo, hMat);
+                h.position.set(-2.0, 1.0, 0);
+                bGroup.add(h);
+
+                const oGeo = new THREE.SphereGeometry(0.7, 24, 24);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 80 });
+                const o = new THREE.Mesh(oGeo, oMat);
+                o.position.set(-0.6, 0.2, 0);
+                bGroup.add(o);
+
+                const clGeo = new THREE.SphereGeometry(0.85, 24, 24);
+                const clMat = new THREE.MeshPhongMaterial({ color: 0x22c55e, shininess: 80 });
+                const cl = new THREE.Mesh(clGeo, clMat);
+                cl.position.set(1.4, -0.6, 0);
+                bGroup.add(cl);
+
+                createCylinderBond(h.position, o.position);
+                createCylinderBond(o.position, cl.position);
+            } else if (ex === 'PH3') {
+                const pGeo = new THREE.SphereGeometry(0.85, 24, 24);
+                const pMat = new THREE.MeshPhongMaterial({ color: 0xf97316, shininess: 80 });
+                const p = new THREE.Mesh(pGeo, pMat);
+                p.position.set(0, 0.3, 0);
+                bGroup.add(p);
+
+                const hGeo = new THREE.SphereGeometry(0.45, 18, 18);
+                const hMat = new THREE.MeshPhongMaterial({ color: 0xfacc15, shininess: 70 });
+                
+                const h1 = new THREE.Mesh(hGeo, hMat);
+                h1.position.set(0, -1.2, 1.6);
+                const h2 = new THREE.Mesh(hGeo, hMat);
+                h2.position.set(-1.5, -1.2, -1.0);
+                const h3 = new THREE.Mesh(hGeo, hMat);
+                h3.position.set(1.5, -1.2, -1.0);
+                bGroup.add(h1); bGroup.add(h2); bGroup.add(h3);
+
+                createCylinderBond(p.position, h1.position);
+                createCylinderBond(p.position, h2.position);
+                createCylinderBond(p.position, h3.position);
+            } else if (ex === 'SO2') {
+                const sGeo = new THREE.SphereGeometry(0.8, 24, 24);
+                const sMat = new THREE.MeshPhongMaterial({ color: 0xeab308, shininess: 80 });
+                const s = new THREE.Mesh(sGeo, sMat);
+                s.position.set(0, 0.4, 0);
+                bGroup.add(s);
+
+                const oGeo = new THREE.SphereGeometry(0.7, 24, 24);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 80 });
+                
+                const o1 = new THREE.Mesh(oGeo, oMat);
+                o1.position.set(-1.6, -0.8, 0);
+                const o2 = new THREE.Mesh(oGeo, oMat);
+                o2.position.set(1.6, -0.8, 0);
+                bGroup.add(o1); bGroup.add(o2);
+
+                createCylinderBond(s.position, o1.position);
+                createCylinderBond(s.position, o2.position);
+            } else if (ex === 'BF3') {
+                const bGeo = new THREE.SphereGeometry(0.7, 24, 24);
+                const bMat = new THREE.MeshPhongMaterial({ color: 0xa855f7, shininess: 80 });
+                const boron = new THREE.Mesh(bGeo, bMat);
+                bGroup.add(boron);
+
+                const fGeo = new THREE.SphereGeometry(0.65, 24, 24);
+                const fMat = new THREE.MeshPhongMaterial({ color: 0x22c55e, shininess: 80 });
+
+                const positions = [
+                    new THREE.Vector3(0, 2.0, 0),
+                    new THREE.Vector3(-1.73, -1.0, 0),
+                    new THREE.Vector3(1.73, -1.0, 0)
+                ];
+
+                positions.forEach(pos => {
+                    const f = new THREE.Mesh(fGeo, fMat);
+                    f.position.copy(pos);
+                    bGroup.add(f);
+                    createCylinderBond(new THREE.Vector3(0,0,0), pos);
+                });
+            } else if (ex === 'C6H12O6') {
+                const cGeo = new THREE.SphereGeometry(0.5, 18, 18);
+                const cMat = new THREE.MeshPhongMaterial({ color: 0x64748b });
+                const oGeo = new THREE.SphereGeometry(0.55, 18, 18);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0xef4444 });
+
+                const ringPos = [
+                    new THREE.Vector3(0, 1.2, 0.8),
+                    new THREE.Vector3(-1.2, 0.4, 0.4),
+                    new THREE.Vector3(-1.0, -1.0, -0.2),
+                    new THREE.Vector3(0.2, -1.4, -0.6),
+                    new THREE.Vector3(1.2, -0.6, -0.2),
+                    new THREE.Vector3(1.0, 0.8, 0.4)
+                ];
+
+                ringPos.forEach((pos, idx) => {
+                    const isO = (idx === 4);
+                    const mesh = new THREE.Mesh(isO ? oGeo : cGeo, isO ? oMat : cMat);
+                    mesh.position.copy(pos);
+                    bGroup.add(mesh);
+                    if (idx > 0) {
+                        createCylinderBond(ringPos[idx-1], pos, 0.1);
+                    }
+                });
+                createCylinderBond(ringPos[5], ringPos[0], 0.1);
+            } else if (ex === 'NaOH') {
+                const naGeo = new THREE.SphereGeometry(0.9, 24, 24);
+                const naMat = new THREE.MeshPhongMaterial({ color: 0x3b82f6 });
+                const na = new THREE.Mesh(naGeo, naMat);
+                na.position.set(-1.2, 0, 0);
+                bGroup.add(na);
+
+                const oGeo = new THREE.SphereGeometry(0.7, 20, 20);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0xef4444 });
+                const o = new THREE.Mesh(oGeo, oMat);
+                o.position.set(0.8, 0, 0);
+                bGroup.add(o);
+
+                const hGeo = new THREE.SphereGeometry(0.4, 16, 16);
+                const hMat = new THREE.MeshPhongMaterial({ color: 0xfacc15 });
+                const h = new THREE.Mesh(hGeo, hMat);
+                h.position.set(2.1, 0, 0);
+                bGroup.add(h);
+
+                createCylinderBond(o.position, h.position, 0.08);
+                createCylinderBond(na.position, o.position, 0.05);
+            } else if (ex === 'NaHCO3') {
+                const naGeo = new THREE.SphereGeometry(0.8, 20, 20);
+                const naMat = new THREE.MeshPhongMaterial({ color: 0x3b82f6 });
+                const na = new THREE.Mesh(naGeo, naMat);
+                na.position.set(-2.0, 0, 0);
+                bGroup.add(na);
+
+                const cGeo = new THREE.SphereGeometry(0.65, 20, 20);
+                const cMat = new THREE.MeshPhongMaterial({ color: 0x64748b });
+                const c = new THREE.Mesh(cGeo, cMat);
+                c.position.set(0.2, 0, 0);
+                bGroup.add(c);
+
+                const oGeo = new THREE.SphereGeometry(0.55, 18, 18);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0xef4444 });
+                
+                const o1 = new THREE.Mesh(oGeo, oMat); o1.position.set(1.4, 0.8, 0);
+                const o2 = new THREE.Mesh(oGeo, oMat); o2.position.set(0.2, -1.3, 0);
+                const o3 = new THREE.Mesh(oGeo, oMat); o3.position.set(-1.0, 0.9, 0);
+                bGroup.add(o1); bGroup.add(o2); bGroup.add(o3);
+
+                createCylinderBond(c.position, o1.position, 0.1);
+                createCylinderBond(c.position, o2.position, 0.1);
+                createCylinderBond(c.position, o3.position, 0.1);
+            }
+        }
+
+        function createCylinderBond(v1, v2, radius = 0.15) {
+            const distance = v1.distanceTo(v2);
+            const cylGeo = new THREE.CylinderGeometry(radius, radius, distance, 12);
+            const cylMat = new THREE.MeshPhongMaterial({ color: 0x94a3b8 });
+            const cylinder = new THREE.Mesh(cylGeo, cylMat);
+            
+            cylinder.position.copy(v1).add(v2).multiplyScalar(0.5);
+            cylinder.lookAt(v2);
+            cylinder.rotateX(Math.PI / 2);
+            bGroup.add(cylinder);
+        }
+
+        window.onload = function() {
+            init3D();
+        };
+    </script>
+</body>
+</html>
